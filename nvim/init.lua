@@ -36,12 +36,12 @@ vim.opt.rtp:prepend(lazypath)
 
 --  You can also configure plugins after the setup call,
 --    as they will be available in your neovim runtime.
-require('lazy').setup({
+require('lazy').setup {
   -- NOTE: This is where your plugins related to LSP can be installed.
   {
-    "ThePrimeagen/harpoon",
-    branch = "harpoon2",
-    requires = { { "nvim-lua/plenary.nvim" } }
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    requires = { { 'nvim-lua/plenary.nvim' } },
   },
   {
     -- LSP Configuration & Plugins
@@ -53,7 +53,7 @@ require('lazy').setup({
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim',       opts = {} },
+      { 'j-hui/fidget.nvim', opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
@@ -68,10 +68,10 @@ require('lazy').setup({
         lsp_fallback = true,
       },
       formatters_by_ft = {
-        lua        = { 'stylua' },
-        javascript = { { 'prettierd', 'prettier' } }
-      }
-    }
+        lua = { 'stylua' },
+        javascript = { { 'prettierd', 'prettier' } },
+      },
+    },
   },
   {
     -- Autocompletion
@@ -91,24 +91,23 @@ require('lazy').setup({
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim',            opts = {} },
+  { 'folke/which-key.nvim', opts = {} },
 
-  { "rktjmp/lush.nvim" },
   -- color themes
-  { "ramojus/mellifluous.nvim" },
-  { "Everblush/everblush.nvim" },
-  { "neanias/everforest-nvim", },
-  { "catppuccin/nvim" },
-  { "EdenEast/nightfox.nvim", },
-  { "nyoom-engineering/oxocarbon.nvim" },
-  { "rose-pine/neovim", },
-  { "mcchrish/zenbones.nvim", },
+  { 'ramojus/mellifluous.nvim' },
+  { 'Everblush/everblush.nvim' },
+  { 'neanias/everforest-nvim' },
+  { 'catppuccin/nvim' },
+  { 'EdenEast/nightfox.nvim' },
+  { 'nyoom-engineering/oxocarbon.nvim' },
+  { 'rose-pine/neovim' },
+  { 'mcchrish/zenbones.nvim' },
   {
-    "nyoom-engineering/oxocarbon.nvim",
+    'nyoom-engineering/oxocarbon.nvim',
     lazy = false,
     priority = 1000, -- make sure to load this before all the other start plugins
     config = function()
-      vim.cmd.colorscheme "mellifluous"
+      vim.cmd.colorscheme 'everblush'
     end,
   },
   {
@@ -118,36 +117,22 @@ require('lazy').setup({
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'nord',
+        theme = 'everblush',
         component_separators = ',',
         section_separators = '',
       },
     },
   },
-
-  {
-    -- Add indentation guides even on blank lines
-    'lukas-reineke/indent-blankline.nvim',
-    -- Enable `lukas-reineke/indent-blankline.nvim`
-    -- See `:help ibl`
-    main = 'ibl',
-    opts = {},
-  },
-
-  -- "gc" to comment visual regions/lines
-  {
-    'numToStr/Comment.nvim',
-    opts = {
-      opleader = {
-        line = '<leader><leader> ',
-      }
-    }
-  },
-
   -- Fuzzy Finder (files, lsp, etc)
   {
     'nvim-telescope/telescope.nvim',
     branch = '0.1.x',
+    opts = {
+      defaults = {
+        file_ignore_patterns = { 'npm-packages-offline-cache/.*', '%_%_kontajner%_%_/.*' },
+        path_display = { 'shorten' },
+      },
+    },
     dependencies = {
       'nvim-lua/plenary.nvim',
       -- Fuzzy Finder Algorithm which requires local dependencies to be built.
@@ -173,30 +158,16 @@ require('lazy').setup({
     },
     build = ':TSUpdate',
   },
+}
 
-  -- NOTE: Next Step on Your Neovim Journey: Add/Configure additional "plugins" for kickstart
-  --       These are some example plugins that I've included in the kickstart repository.
-  --       Uncomment any of the lines below to enable them.
-  -- require 'kickstart.plugins.autoformat',
-  -- require 'kickstart.plugins.debug',
-
-  -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
-  --    You can use this folder to prevent any conflicts with this init.lua if you're interested in keeping
-  --    up-to-date with whatever is in the kickstart repo.
-  --    Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  --
-  --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
-  -- { import = 'custom.plugins' },
-  -- [[ Setting options ]]
-  -- See `:help vim.o`
-  -- NOTE: You can change these options as you wish!
-})
 -- [[ Basic Keymaps ]]
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
 vim.keymap.set('n', '<leader>l', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
+-- '<leader>sf', require('telescope.builtin').find_files, '[S]earch [F]iles'
+vim.keymap.set('n', '<leader><leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
 
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
@@ -255,23 +226,45 @@ local on_attach = function(_, bufnr)
   end, { desc = 'Format current buffer with LSP' })
 end
 
-local harpoon = require("harpoon")
+local harpoon = require 'harpoon'
 
 -- REQUIRED
 harpoon:setup()
--- REQUIRED
+vim.keymap.set('n', '<leader>a', function()
+  harpoon:list():add()
+end)
+vim.keymap.set('n', '<leader>;', function()
+  harpoon.ui:toggle_quick_menu(harpoon:list())
+end)
 
-vim.keymap.set("n", "<leader>a", function() harpoon:list():add() end)
-vim.keymap.set("n", "<leader>e", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end)
-
-vim.keymap.set("n", "<leader><leader>q", function() harpoon:list():select(1) end)
-vim.keymap.set("n", "<leader><leader>w", function() harpoon:list():select(2) end)
-vim.keymap.set("n", "<leader><leader>e", function() harpoon:list():select(3) end)
-vim.keymap.set("n", "<leader><leader>r", function() harpoon:list():select(4) end)
+vim.keymap.set('n', '<leader>q', function()
+  harpoon:list():select(1)
+end)
+vim.keymap.set('n', '<leader>w', function()
+  harpoon:list():select(2)
+end)
+vim.keymap.set('n', '<leader>e', function()
+  harpoon:list():select(3)
+end)
+vim.keymap.set('n', '<leader>r', function()
+  harpoon:list():select(4)
+end)
 
 -- Toggle previous & next buffers stored within Harpoon list
-vim.keymap.set("n", "<C-S-P>", function() harpoon:list():prev() end)
-vim.keymap.set("n", "<C-S-N>", function() harpoon:list():next() end)
+vim.keymap.set('n', '<C-S-P>', function()
+  harpoon:list():prev()
+end)
+vim.keymap.set('n', '<C-S-N>', function()
+  harpoon:list():next()
+end)
+
+-- Toggle previous & next buffers stored within Harpoon list
+vim.keymap.set('n', '<C-S-P>', function()
+  harpoon:list():prev()
+end)
+vim.keymap.set('n', '<C-S-N>', function()
+  harpoon:list():next()
+end)
 
 -- document existing key chains
 require('which-key').register {
@@ -401,6 +394,7 @@ cmp.setup {
   },
 }
 
+vim.keymap.set('n', 'yp', ":call setreg('+', expand('%:p'))<CR>")
 
 -- Set highlight on search
 vim.o.hlsearch = false
