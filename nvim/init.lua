@@ -37,7 +37,17 @@ vim.opt.rtp:prepend(lazypath)
 --  You can also configure plugins after the setup call,
 --    as they will be available in your neovim runtime.
 require('lazy').setup {
+
   -- NOTE: This is where your plugins related to LSP can be installed.
+  {
+    'LintaoAmons/scratch.nvim',
+    event = "VeryLazy",
+    config = function()
+      require("scratch").setup({
+        scratch_file_dir = "~/p/.scratch"
+      })
+    end
+  },
   {
     'ThePrimeagen/harpoon',
     branch = 'harpoon2',
@@ -53,23 +63,46 @@ require('lazy').setup {
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim',       opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
     },
   },
-  {
+  { -- Autoformat
     'stevearc/conform.nvim',
+    lazy = false,
+    keys = {
+      {
+        '<leader>f',
+        function()
+          require('conform').format { async = true, lsp_fallback = true }
+        end,
+        mode = '',
+        desc = '[F]ormat buffer',
+      },
+    },
     opts = {
       notify_on_error = false,
-      format_on_save = {
-        timeout_ms = 250,
-        lsp_fallback = true,
-      },
+      format_on_save = function(bufnr)
+        -- Disable "format_on_save lsp_fallback" for languages that don't
+        -- have a well standardized coding style. You can add additional
+        -- languages here or re-enable it for the disabled ones.
+        local disable_filetypes = { c = true, cpp = true }
+        return {
+          timeout_ms = 750,
+          lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
+        }
+      end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        javascript = { { 'prettierd', 'prettier' } },
+        -- Conform can also run multiple formatters sequentially
+        -- python = { "isort", "black" },
+        --
+        -- You can use a sub-list to tell conform to run *until* a formatter
+        -- is found.
+        javascript = { "prettier" },
+        astro = { "prettier" },
       },
     },
   },
@@ -91,9 +124,14 @@ require('lazy').setup {
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  { 'folke/which-key.nvim',            opts = {} },
+
+  -- "gc" to comment visual regions/lines
+  { 'numToStr/Comment.nvim',           opts = {} },
 
   -- color themes
+  { 'dracula/vim' },
+  { 'navarasu/onedark.nvim' },
   { 'ramojus/mellifluous.nvim' },
   { 'Everblush/everblush.nvim' },
   { 'neanias/everforest-nvim' },
@@ -107,7 +145,10 @@ require('lazy').setup {
     lazy = false,
     priority = 1000, -- make sure to load this before all the other start plugins
     config = function()
-      vim.cmd.colorscheme 'everblush'
+      -- require('onedark').setup({
+      --   style = 'darker'
+      -- })
+      vim.cmd.colorscheme 'dracula'
     end,
   },
   {
@@ -117,7 +158,7 @@ require('lazy').setup {
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'everblush',
+        theme = 'dracula',
         component_separators = ',',
         section_separators = '',
       },
@@ -149,14 +190,37 @@ require('lazy').setup {
       },
     },
   },
-
-  {
-    -- Highlight, edit, and navigate code
+  { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
-    dependencies = {
-      'nvim-treesitter/nvim-treesitter-textobjects',
-    },
     build = ':TSUpdate',
+    opts = {
+      ensure_installed = { 'astro', 'bash', 'c', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc' },
+      -- Autoinstall languages that are not installed
+      auto_install = true,
+      highlight = {
+        enable = true,
+        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+        --  If you are experiencing weird indenting issues, add the language to
+        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
+        additional_vim_regex_highlighting = { 'ruby' },
+      },
+      indent = { enable = true, disable = { 'ruby' } },
+    },
+    config = function(_, opts)
+      -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
+
+      -- Prefer git instead of curl in order to improve connectivity in some environments
+      require('nvim-treesitter.install').prefer_git = true
+      ---@diagnostic disable-next-line: missing-fields
+      require('nvim-treesitter.configs').setup(opts)
+
+      -- There are additional nvim-treesitter modules that you can use to interact
+      -- with nvim-treesitter. You should go explore a few and see what interests you:
+      --
+      --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
+      --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
+      --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+    end,
   },
 }
 
@@ -221,10 +285,39 @@ local on_attach = function(_, bufnr)
   vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
   -- Create a command `:Format` local to the LSP buffer
-  vim.api.nvim_buf_create_user_command(bufnr, 'Format', function(_)
-    vim.lsp.buf.format()
-  end, { desc = 'Format current buffer with LSP' })
+  -- vim.api.nvim_buf_create_user_command(bufnr, 'Format', function(args)
+  --   require("conform").format({ bufnr = args.buf })
+  -- end, { desc = 'Format current buffer with LSP' })
+  -- vim.api.nvim_create_autocmd("BufWritePre", {
+  --   pattern = "*",
+  --   callback = function(args)
+  --     require("conform").format({ bufnr = args.buf })
+  --   end,
+  -- })
 end
+
+local slow_format_filetypes = {}
+require("conform").setup({
+  format_on_save = function(bufnr)
+    if slow_format_filetypes[vim.bo[bufnr].filetype] then
+      return
+    end
+    local function on_format(err)
+      if err and err:match("timeout$") then
+        slow_format_filetypes[vim.bo[bufnr].filetype] = true
+      end
+    end
+
+    return { timeout_ms = 200, lsp_format = "fallback" }, on_format
+  end,
+
+  format_after_save = function(bufnr)
+    if not slow_format_filetypes[vim.bo[bufnr].filetype] then
+      return
+    end
+    return { lsp_format = "fallback" }
+  end,
+})
 
 local harpoon = require 'harpoon'
 
@@ -237,16 +330,16 @@ vim.keymap.set('n', '<leader>;', function()
   harpoon.ui:toggle_quick_menu(harpoon:list())
 end)
 
-vim.keymap.set('n', '<leader>q', function()
+vim.keymap.set('n', '<leader>1', function()
   harpoon:list():select(1)
 end)
-vim.keymap.set('n', '<leader>w', function()
+vim.keymap.set('n', '<leader>2', function()
   harpoon:list():select(2)
 end)
-vim.keymap.set('n', '<leader>e', function()
+vim.keymap.set('n', '<leader>3', function()
   harpoon:list():select(3)
 end)
-vim.keymap.set('n', '<leader>r', function()
+vim.keymap.set('n', '<leader>4', function()
   harpoon:list():select(4)
 end)
 
